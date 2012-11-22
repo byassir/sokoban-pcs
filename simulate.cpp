@@ -5,6 +5,9 @@ void run_simulation(board b, string s)
     string::iterator it;
     char **board = b.elements;
     position curr(b.player);
+    cout << "Solution found: " << s << endl;
+    cout << "Simulation starting in 5 seconds." << endl;
+    sleep(5);
     b.print();
     for(it = s.begin(); it !=s.end(); ++ it)
     {
