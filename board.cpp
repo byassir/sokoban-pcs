@@ -1,5 +1,30 @@
 #include "board.h"
 
+board::board(const board &b)
+{
+    num_rows = b.num_rows;
+    num_cols = b.num_cols;
+
+    elements = new char*[num_rows];
+    for(int i = 0; i < num_rows; ++ i)
+    {
+        elements[i] = new char[num_cols];
+        for(int j = 0; j < num_cols; ++ j)
+            elements[i][j] = b.elements[i][j];
+    }
+
+
+    player = *(new position(b.player));
+
+    vector<position>::iterator it;
+
+    for(int i = 0; i < b.boxes.size(); ++ i)
+        boxes.push_back(*(new position(b.boxes[i])));
+    
+    for(int i = 0; i < b.empty_goals.size(); ++ i)
+        empty_goals.push_back(*(new position(b.empty_goals[i])));
+}
+
 board::board(vector<string> lines)
 {
     this->num_rows = lines.size();
@@ -35,17 +60,16 @@ board::board(vector<string> lines)
                     break;
             }
         }
-
         ++ i;
     }
 }
 
 void board::print()
 {
-    for(int i = 0; i < this->num_cols; ++ i)
+    for(int i = 0; i < num_rows; ++ i)
     {
-        for(int j = 0; j < this->num_rows; ++ j)
-            cout << this->elements[i][j];
+        for(int j = 0; j < num_cols; ++ j)
+            cout << elements[i][j];
         cout << endl;
     }
     return;
@@ -55,11 +79,11 @@ bool board::move_player(position p)
 {
     if((elements[p.x][p.y] == '#') || 
        (elements[p.x][p.y] == '*') ||
-       (elements[p.x][p.y] == '$') ||
-       (elements[p.x][p.y] == '@') ||
-       (elements[p.x][p.y] == '+'))
+       (elements[p.x][p.y] == '$'))
     {
-        cout << "Trying to move player into an invalid position" << endl;
+        cout << "Trying to move player into an invalid position: ";
+        p.print();
+        this->print();
         return false;
     }
 
@@ -106,6 +130,7 @@ bool board::push_box(position &box, position dest)
     if(elements[box.x][box.y] == '*')
     {
         elements[box.x][box.y] = '.';
+        empty_goals.push_back(*(new position(box)));
     }else if(elements[box.x][box.y] == '$')
     {
         elements[box.x][box.y] = ' ';
@@ -119,6 +144,13 @@ bool board::push_box(position &box, position dest)
     if(elements[dest.x][dest.y] == '.')
     {
         elements[dest.x][dest.y] = '*';
+        vector<position>::iterator it;
+        for(it = empty_goals.begin(); it != empty_goals.end(); ++ it)
+            if((*it).equals(dest))
+            {
+                empty_goals.erase(it);
+                break; 
+            }
     }else
     {
         elements[dest.x][dest.y] = '$';
@@ -132,7 +164,7 @@ bool board::push_box(position &box, position dest)
 
 string board::find_path(position a, position b)
 {
-    queue<node> q;
+    queue<node_p> q;
     bool visited[num_rows][num_cols];
 
     memset(visited, 0, num_rows * num_cols * sizeof(bool));
@@ -140,15 +172,15 @@ string board::find_path(position a, position b)
     if((elements[b.x][b.y] == '$') ||
        (elements[b.x][b.y] == '*') ||
        (elements[b.x][b.y] == '#'))
-        return *(new string());
+        return "E";
 
     //Add the first element to the queue
-    q.push(*(new node(a, "")));
+    q.push(*(new node_p(a, "")));
 
     while(!q.empty())
     {
         //Take the first element
-        node par = q.front();
+        node_p par = q.front();
         q.pop();
 
         position p_pos = par.current;
@@ -173,7 +205,7 @@ string board::find_path(position a, position b)
             string son_p = par.path;
             son_p.append("U");
 
-            q.push(*(new node(
+            q.push(*(new node_p(
                        *(new position(p_pos.x - 1, p_pos.y)), 
                         son_p)
                     ));
@@ -186,7 +218,7 @@ string board::find_path(position a, position b)
             string son_p = par.path;
             son_p.append("D");
 
-            q.push(*(new node(
+            q.push(*(new node_p(
                         *(new position(p_pos.x + 1, p_pos.y)), 
                         son_p)
                     ));
@@ -199,7 +231,7 @@ string board::find_path(position a, position b)
             string son_p = par.path;
             son_p.append("L");
 
-            q.push(*(new node(
+            q.push(*(new node_p(
                         *(new position(p_pos.x, p_pos.y - 1)), 
                         son_p)
                     ));
@@ -212,7 +244,7 @@ string board::find_path(position a, position b)
             string son_p = par.path;
             son_p.append("R");
 
-            q.push(*(new node(
+            q.push(*(new node_p(
                         *(new position(p_pos.x, p_pos.y + 1)),
                         son_p)
                     ));
@@ -222,5 +254,5 @@ string board::find_path(position a, position b)
     }
 
     //If the iterations finish without returning, there is no possible path
-    return *(new string());
+    return "E";
 }
