@@ -1,4 +1,4 @@
-#include "node.h"
+#include "node_p.h"
 
 #include <string>
 #include <vector>
@@ -22,6 +22,9 @@ class board
         //representation of such board
         board(vector<string> lines);
 
+        //Constructs a copy of the board
+        board(const board &b);
+
         void print();
 
         //Moves the player to the destination indicated by p and performs the apropriate
@@ -35,7 +38,7 @@ class board
         bool push_box(position &box, position dest);
 
         //Finds the shortest path to get from a to be in this board and returns
-        //it in the form of a string. Returns an empty if there is no valid path.
+        //it in the form of a string. Returns 'E' if there is no valid path.
         //This is done using BFS.
         string find_path(position a, position b);
 };
