@@ -59,8 +59,9 @@ void call_print(position p)
 
 string push_to_goals(board in)
 {
+    unordered_map<board, bool> visited;
     queue<node_b> q;
-    q.push(*(new node_b(in, "")));
+    q.push(node_b(in, ""));
 
     while(!q.empty())
     {
@@ -72,6 +73,11 @@ string push_to_goals(board in)
         if(par_b.empty_goals.size() == 0)
             return par.path;
 
+        //Check if this element has already been visited
+/*        if(visited.find(par_b) != visited.end())
+            continue;
+
+        visited.insert(pair<board, bool>(par_b, true));*/
         //For each box that is present on the board, try pushing it in every
         //valid direction
         for(int i = 0; i < par_b.boxes.size(); ++ i)
@@ -95,12 +101,12 @@ string push_to_goals(board in)
                     board son_b(par_b);
                     son_b.move_player(pt);
                     son_b.push_box(son_b.boxes[i], 
-                                   *(new position(box.x - 1, box.y)));
+                                   position(box.x - 1, box.y));
                     son_b.move_player(box);
                     string new_path = par.path;
                     new_path += path_t;
                     new_path += "U";
-                    q.push(*(new node_b(son_b, new_path)));
+                    q.push(node_b(son_b, new_path));
                 }
             }
 
@@ -119,12 +125,12 @@ string push_to_goals(board in)
                     board son_b(par_b);
                     son_b.move_player(pt);
                     son_b.push_box(son_b.boxes[i], 
-                                   *(new position(box.x + 1, box.y)));
+                                   position(box.x + 1, box.y));
                     son_b.move_player(box);
                     string new_path = par.path;
                     new_path += path_t;
                     new_path += "D";
-                    q.push(*(new node_b(son_b, new_path)));
+                    q.push(node_b(son_b, new_path));
                 }
             }
 
@@ -143,12 +149,12 @@ string push_to_goals(board in)
                     board son_b(par_b);
                     son_b.move_player(pt);
                     son_b.push_box(son_b.boxes[i], 
-                                   *(new position(box.x, box.y - 1)));
+                                   position(box.x, box.y - 1));
                     son_b.move_player(box);
                     string new_path = par.path;
                     new_path += path_t;
                     new_path += "L";
-                    q.push(*(new node_b(son_b, new_path)));
+                    q.push(node_b(son_b, new_path));
                 }
             }
 
@@ -167,12 +173,12 @@ string push_to_goals(board in)
                     board son_b(par_b);
                     son_b.move_player(pt);
                     son_b.push_box(son_b.boxes[i], 
-                                   *(new position(box.x, box.y + 1)));
+                                   position(box.x, box.y + 1));
                     son_b.move_player(box);
                     string new_path = par.path;
                     new_path += path_t;
                     new_path += "R";
-                    q.push(*(new node_b(son_b, new_path)));
+                    q.push(node_b(son_b, new_path));
                 }
             }
 

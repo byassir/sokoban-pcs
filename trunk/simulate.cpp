@@ -10,34 +10,39 @@ void run_simulation(board b, string s)
     {
         usleep(500000);
         char move = *it;
+        position cp(curr);
         switch(move){
             case 'U':
                 -- curr.x;
+                --cp.x;
                 if((board[curr.x][curr.y] == '*') ||
                    (board[curr.x][curr.y] == '$'))
-                    b.push_box(*(new position(curr)),
-                               *(new position(curr.x - 1, curr.y)));
+                    b.push_box(cp,
+                               position(curr.x - 1, curr.y));
                 break;
             case 'D':
                 ++ curr.x;
+                ++ cp.x;
                 if((board[curr.x][curr.y] == '*') ||
                    (board[curr.x][curr.y] == '$'))
-                    b.push_box(*(new position(curr)),
-                               *(new position(curr.x + 1, curr.y)));
+                    b.push_box(cp,
+                               position(curr.x + 1, curr.y));
                 break;
             case 'L':
                 -- curr.y;
+                -- cp.y;
                 if((board[curr.x][curr.y] == '*') ||
                    (board[curr.x][curr.y] == '$'))
-                    b.push_box(*(new position(curr)),
-                               *(new position(curr.x, curr.y - 1)));
+                    b.push_box(cp,
+                               position(curr.x, curr.y - 1));
                 break;
             case 'R':
                 ++ curr.y;
+                ++ cp.y;
                 if((board[curr.x][curr.y] == '*') ||
                    (board[curr.x][curr.y] == '$'))
-                    b.push_box(*(new position(curr)),
-                               *(new position(curr.x, curr.y + 1)));
+                    b.push_box(cp,
+                               position(curr.x, curr.y + 1));
                 break;
         }
         b.move_player(curr);
