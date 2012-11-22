@@ -46,7 +46,6 @@ int main(int argc, char **argv)
         (*ps).print();
     }*/
     string sol = push_to_goals(b);
-    cout << sol << endl;
     run_simulation(b, sol);
     return 1;
 }
@@ -59,7 +58,7 @@ void call_print(position p)
 
 string push_to_goals(board in)
 {
-    unordered_map<board, bool> visited;
+    set<board> visited;
     queue<node_b> q;
     q.push(node_b(in, ""));
 
@@ -74,10 +73,9 @@ string push_to_goals(board in)
             return par.path;
 
         //Check if this element has already been visited
-/*        if(visited.find(par_b) != visited.end())
+        if(!visited.insert(par_b).second)
             continue;
 
-        visited.insert(pair<board, bool>(par_b, true));*/
         //For each box that is present on the board, try pushing it in every
         //valid direction
         for(int i = 0; i < par_b.boxes.size(); ++ i)

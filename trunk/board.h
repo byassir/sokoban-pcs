@@ -42,6 +42,6 @@ class board
         //This is done using BFS.
         string find_path(position a, position b);
 
-        //Override of the == operator
-        bool operator==(const board b) const;
+        //Override of the < operator
+        bool operator<(const board b) const;
 };

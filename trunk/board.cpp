@@ -257,16 +257,16 @@ string board::find_path(position a, position b)
     return "E";
 }
 
-bool board::operator==(const board b) const
+bool board::operator<(const board b) const
 {
     if((num_rows != b.num_rows) ||
         num_cols != b.num_cols)
-        return false;
+        return true;
 
     for(int i = 0; i < num_rows; ++ i)
         for(int j = 0; j < num_cols; ++ j)
             if(elements[i][j] != b.elements[i][j])
-                return false;
+                return true;
 
-    return true;
+    return false;
 }
