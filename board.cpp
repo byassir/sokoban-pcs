@@ -14,15 +14,15 @@ board::board(const board &b)
     }
 
 
-    player = *(new position(b.player));
+    player = position(b.player);
 
     vector<position>::iterator it;
 
     for(int i = 0; i < b.boxes.size(); ++ i)
-        boxes.push_back(*(new position(b.boxes[i])));
+        boxes.push_back(position(b.boxes[i]));
     
     for(int i = 0; i < b.empty_goals.size(); ++ i)
-        empty_goals.push_back(*(new position(b.empty_goals[i])));
+        empty_goals.push_back(position(b.empty_goals[i]));
 }
 
 board::board(vector<string> lines)
@@ -47,14 +47,14 @@ board::board(vector<string> lines)
             switch(el)
             {
                 case '@':
-                    this->player = *(new position(i, j));
+                    this->player = position(i, j);
                     break;
                 case '$':
                 case '*':
-                    (this->boxes).push_back(*(new position(i, j)));
+                    (this->boxes).push_back(position(i, j));
                     break;
                 case '.':
-                    (this->empty_goals).push_back(*(new position(i, j)));
+                    (this->empty_goals).push_back(position(i, j));
                     break;
                 default:
                     break;
@@ -130,7 +130,7 @@ bool board::push_box(position &box, position dest)
     if(elements[box.x][box.y] == '*')
     {
         elements[box.x][box.y] = '.';
-        empty_goals.push_back(*(new position(box)));
+        empty_goals.push_back(position(box));
     }else if(elements[box.x][box.y] == '$')
     {
         elements[box.x][box.y] = ' ';
@@ -175,7 +175,7 @@ string board::find_path(position a, position b)
         return "E";
 
     //Add the first element to the queue
-    q.push(*(new node_p(a, "")));
+    q.push(node_p(a, ""));
 
     while(!q.empty())
     {
@@ -205,10 +205,10 @@ string board::find_path(position a, position b)
             string son_p = par.path;
             son_p.append("U");
 
-            q.push(*(new node_p(
-                       *(new position(p_pos.x - 1, p_pos.y)), 
-                        son_p)
-                    ));
+            q.push(node_p(
+                     position(p_pos.x - 1, p_pos.y), 
+                     son_p)
+                  );
         }
         //Bottom
         if((elements[p_pos.x + 1][p_pos.y] != '*') &&
@@ -218,10 +218,10 @@ string board::find_path(position a, position b)
             string son_p = par.path;
             son_p.append("D");
 
-            q.push(*(new node_p(
-                        *(new position(p_pos.x + 1, p_pos.y)), 
-                        son_p)
-                    ));
+            q.push(node_p(
+                      position(p_pos.x + 1, p_pos.y), 
+                      son_p)
+                  );
         }
         //Left
         if((elements[p_pos.x][p_pos.y - 1] != '*') &&
@@ -231,10 +231,10 @@ string board::find_path(position a, position b)
             string son_p = par.path;
             son_p.append("L");
 
-            q.push(*(new node_p(
-                        *(new position(p_pos.x, p_pos.y - 1)), 
-                        son_p)
-                    ));
+            q.push(node_p(
+                     position(p_pos.x, p_pos.y - 1), 
+                     son_p)
+                  );
         }
         //Right
         if((elements[p_pos.x][p_pos.y + 1] != '*') &&
@@ -244,10 +244,10 @@ string board::find_path(position a, position b)
             string son_p = par.path;
             son_p.append("R");
 
-            q.push(*(new node_p(
-                        *(new position(p_pos.x, p_pos.y + 1)),
-                        son_p)
-                    ));
+            q.push(node_p(
+                      position(p_pos.x, p_pos.y + 1),
+                      son_p)
+                  );
         }
 
         //delete &par;
@@ -255,4 +255,18 @@ string board::find_path(position a, position b)
 
     //If the iterations finish without returning, there is no possible path
     return "E";
+}
+
+bool board::operator==(const board b) const
+{
+    if((num_rows != b.num_rows) ||
+        num_cols != b.num_cols)
+        return false;
+
+    for(int i = 0; i < num_rows; ++ i)
+        for(int j = 0; j < num_cols; ++ j)
+            if(elements[i][j] != b.elements[i][j])
+                return false;
+
+    return true;
 }

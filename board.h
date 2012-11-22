@@ -41,4 +41,7 @@ class board
         //it in the form of a string. Returns 'E' if there is no valid path.
         //This is done using BFS.
         string find_path(position a, position b);
+
+        //Override of the == operator
+        bool operator==(const board b) const;
 };

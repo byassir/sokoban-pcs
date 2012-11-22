@@ -5,6 +5,7 @@
 #include <sstream>
 #include <algorithm>
 #include <queue>
+#include <unordered_map>
 
 using namespace std;
 
@@ -19,3 +20,4 @@ int main(int argc, char **argv);
 //that must be followed to push each box into a goal, or the string 'E' if such
 //path cannot be found
 string push_to_goals(board in);
+
