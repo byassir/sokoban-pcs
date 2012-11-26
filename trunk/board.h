@@ -17,6 +17,7 @@ class board
         position player;
         vector<position> boxes;
         vector<position> empty_goals;
+        bool **s_deadlock;
 
         //Method that builds a board from a vector containing the lines with a string
         //representation of such board
@@ -44,4 +45,11 @@ class board
 
         //Override of the < operator
         bool operator<(const board b) const;
+
+        //Destructor of the class
+ //       ~board();
+
+    private:
+        //Finds all static deadlocks in the board and marks them as such
+        void find_deadlocks();
 };

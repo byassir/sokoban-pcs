@@ -13,6 +13,13 @@ board::board(const board &b)
             elements[i][j] = b.elements[i][j];
     }
 
+    s_deadlock = new bool*[num_rows];
+    for(int i = 0; i < num_rows; ++ i)
+    {
+        s_deadlock[i] = new bool[num_cols];
+        for(int j = 0; j < num_cols; ++ j)
+            s_deadlock[i][j] = b.s_deadlock[i][j];
+    }
 
     player = position(b.player);
 
@@ -29,6 +36,7 @@ board::board(vector<string> lines)
 {
     this->num_rows = lines.size();
     this->num_cols = lines.back().size();
+
     this->elements = new char*[this->num_rows];
     for(int i = 0; i < lines.size(); ++ i)
         this->elements[i] = new char[this->num_cols];
@@ -47,6 +55,7 @@ board::board(vector<string> lines)
             switch(el)
             {
                 case '@':
+                case '+':
                     this->player = position(i, j);
                     break;
                 case '$':
@@ -62,6 +71,8 @@ board::board(vector<string> lines)
         }
         ++ i;
     }
+
+    find_deadlocks();
 }
 
 void board::print()
@@ -269,4 +280,147 @@ bool board::operator<(const board b) const
                 return true;
 
     return false;
+}
+
+/*board::~board()
+{
+    for(int i = 0; i < num_rows; ++ i)
+    {
+        cout << "Deleting row" << i << endl;
+        delete[] elements[i];
+        delete[] s_deadlock[i];
+    }
+
+    delete[] elements;
+    delete[] s_deadlock;
+}*/
+
+void board::find_deadlocks()
+{
+    //Allocate a new deadlock matrix
+    s_deadlock = new bool*[num_rows];
+    for(int i = 0; i < num_rows; ++ i)
+    {
+        s_deadlock[i] = new bool[num_cols];
+        for(int j = 0; j < num_cols; ++ j)
+            s_deadlock[i][j] = false;
+    }
+
+    //Go through all whitespaces of the board and identify corners
+    for(int i = 1; i < num_rows - 1; ++ i)
+    {
+        for(int j = 1; j < num_cols - 1; ++ j)
+        {
+            //Don't double check positions
+            if(s_deadlock[i][j])
+                continue;
+            //Only check for deadlocks on white spaces
+            if((elements[i][j] == ' ') ||
+               (elements[i][j] == '$') ||
+               (elements[i][j] == '@')
+               )
+            {
+                //Check if this space is surrounded in both directions
+                int num_walls = 0;
+                if((elements[i - 1][j] == '#') || (elements[i + 1][j] == '#'))
+                    ++ num_walls;
+                if(elements[i][j - 1] == '#' || (elements[i][j + 1] == '#'))
+                    ++ num_walls;
+
+                if(num_walls > 1)
+                {
+                    s_deadlock[i][j] = true;
+                    //Check the whole row and column to see if this is a 
+                    //corridor
+                    int factor = 0;
+                    //Vertical check
+                    if(elements[i - 1][j] == '#')
+                    {
+                        factor = 1;
+                    }else
+                    {
+                        factor = -1;
+                    }
+                    
+                    int k = i;
+                    int num_jumps = 0;
+                    bool is_corr = false;
+                    while((0 < k) && (k < num_rows - 1) &&
+                            ((elements[k][j + 1] == '#') || 
+                            (elements[k][j - 1] == '#'))
+                         )
+                    {
+                        k += factor;
+                        if(elements[k][j] == '#')
+                        {
+                            is_corr = true;
+                            break;
+                        }
+                        ++ num_jumps;
+                    }
+
+                    if(is_corr)
+                    {
+                        k = i;
+                        while(num_jumps > 0)
+                        {
+                            k += factor;
+                            -- num_jumps;
+                            //Don't mark goals as deadlocks
+                            if((elements[k][j] == '.') ||
+                               (elements[k][j] == '*') ||
+                               (elements[k][j] == '+'))
+                                continue;
+                            s_deadlock[k][j] = true;
+                        }
+                    }
+
+                    //Horizontal check
+                    if(elements[i][j - 1] == '#')
+                    {
+                        factor = 1;
+                    }else
+                    {
+                        factor = -1;
+                    }
+                    
+                    k = j;
+                    num_jumps = 0;
+                    is_corr = false;
+                    while((0 < k) && (k < num_cols - 1) &&
+                           ((elements[i + 1][k] == '#') || 
+                           (elements[i - 1][k] == '#'))
+                         )
+                    {
+                        k += factor;
+                        if(elements[i][k] == '#')
+                        {
+                            is_corr = true;
+                            break;
+                        }
+                        ++ num_jumps;
+                    }
+
+                    if(is_corr)
+                    {
+                        k = j;
+                        while(num_jumps > 0)
+                        {
+                            k += factor;
+                            -- num_jumps;
+                            //Don't mark goals as deadlocks
+                            if((elements[i][k] == '.') ||
+                               (elements[i][k] == '*') ||
+                               (elements[i][k] == '+'))
+                                continue;
+
+                            s_deadlock[i][k] = true;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    return;
 }
