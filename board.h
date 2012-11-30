@@ -1,14 +1,19 @@
 #include "node_p.h"
 
 #include <string>
+#include <sstream>
 #include <vector>
 #include <iostream>
 #include <queue>
 #include <cstring>
 #include <cstdlib>
 #include <climits>
+#include <algorithm>
 
 using namespace std;
+
+//Function used to sort the boxes of the vector
+bool box_cmp(position a, position b);
 
 class board
 {
@@ -46,11 +51,11 @@ class board
         //This is done using BFS.
         string find_path(position a, position b);
 
-        //Override of the < operator
-        bool operator<(const board b) const;
-
         //Defines wether a position will lead to a dead configuration
         bool is_deadlock(int x, int y);
+
+        //Returns the special hash key for this board
+        string get_key();
 
     private:
         //Finds all positions that are deadlocked due to wall configuration
@@ -62,4 +67,8 @@ class board
         //Updates the possible distance from each position to the nearest free
         //goal
         void update_distances();
+
+        //Function that determines the reachable area for the player in the 
+        //given board
+        position find_area();
 };

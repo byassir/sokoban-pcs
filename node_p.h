@@ -1,4 +1,7 @@
+#ifndef POSITION_H
+#define POSITION_H
 #include "position.h"
+#endif
 
 #include <string>
 
