@@ -21,6 +21,14 @@ board::board(const board &b)
             s_deadlock[i][j] = b.s_deadlock[i][j];
     }
 
+    distance = new int*[num_rows];
+    for(int i = 0; i < num_rows; ++ i)
+    {
+        distance[i] = new int[num_cols];
+        for(int j = 0; j < num_cols; ++ j)
+            distance[i][j] = b.distance[i][j];
+    }
+
     player = position(b.player);
 
     vector<position>::iterator it;
@@ -72,6 +80,11 @@ board::board(vector<string> lines)
         ++ i;
     }
 
+    distance = new int*[num_rows];
+    for(int i = 0; i < num_rows; ++ i)
+        distance[i] = new int[num_cols];
+
+    update_distances();
     find_deadlocks();
 }
 
@@ -127,6 +140,7 @@ bool board::move_player(position p)
 
 bool board::push_box(position &box, position dest)
 {
+    bool update_dist = false;
     if((elements[dest.x][dest.y] == '#') || 
        (elements[dest.x][dest.y] == '*') ||
        (elements[dest.x][dest.y] == '$') ||
@@ -142,6 +156,7 @@ bool board::push_box(position &box, position dest)
     {
         elements[box.x][box.y] = '.';
         empty_goals.push_back(position(box));
+        update_dist = true;
     }else if(elements[box.x][box.y] == '$')
     {
         elements[box.x][box.y] = ' ';
@@ -162,6 +177,7 @@ bool board::push_box(position &box, position dest)
                 empty_goals.erase(it);
                 break; 
             }
+        update_dist = true;
     }else
     {
         elements[dest.x][dest.y] = '$';
@@ -170,6 +186,8 @@ bool board::push_box(position &box, position dest)
     //Update the box's attributes
     box.x = dest.x;
     box.y = dest.y;
+    if(update_dist)
+        update_distances();
     return true;
 }
 
@@ -355,6 +373,11 @@ void board::find_deadlocks()
                         {
                             is_corr = true;
                             break;
+                        }else if((elements[k][j] == '.') ||
+                                 (elements[k][j] == '+') ||
+                                 (elements[k][j] == '*'))
+                        {
+                            break;
                         }
                         ++ num_jumps;
                     }
@@ -397,7 +420,13 @@ void board::find_deadlocks()
                         {
                             is_corr = true;
                             break;
+                        }else if((elements[i][k] == '.') ||
+                                 (elements[i][k] == '+') ||
+                                 (elements[i][k] == '*'))
+                        {
+                            break;
                         }
+
                         ++ num_jumps;
                     }
 
@@ -408,12 +437,6 @@ void board::find_deadlocks()
                         {
                             k += factor;
                             -- num_jumps;
-                            //Don't mark goals as deadlocks
-                            if((elements[i][k] == '.') ||
-                               (elements[i][k] == '*') ||
-                               (elements[i][k] == '+'))
-                                continue;
-
                             s_deadlock[i][k] = true;
                         }
                     }
@@ -422,5 +445,126 @@ void board::find_deadlocks()
         }
     }
 
+    return;
+}
+
+bool board::is_deadlock(int x, int y)
+{
+    if(s_deadlock[x][y])
+        return true;
+
+    bool **checked = new bool*[num_rows];
+    for(int i = 0; i < num_rows; ++ i)
+    {
+        checked[i] = new bool[num_cols];
+        for(int j = 0; j < num_cols; ++ j)
+            checked[i][j] = false;
+    }
+    //memset(checked, 0, num_rows * num_cols * sizeof(bool));
+    return dynamic_deadlock(x, y, checked);
+}
+
+bool board::dynamic_deadlock(int x, int y, bool **checked)
+{
+    bool down_dead = false;
+    bool up_dead = false;
+    bool left_dead = false;
+    bool right_dead = false;
+
+    //Check if the box can leave through bottom
+    if((elements[x + 1][y] == '$') || (elements[x + 1][y] == '*'))
+    {
+        if(!checked[x + 1][y])
+        {
+            checked[x + 1][y] = true;
+            down_dead = dynamic_deadlock(x + 1, y, checked);
+            checked[x + 1][y] = false;
+        }else
+        {
+            down_dead = true;
+        }
+    }else if(elements[x + 1][y] == '#')
+    {
+        down_dead = true;
+    }
+
+    //Check if the box can leave through top
+    if((elements[x - 1][y] == '$') || (elements[x - 1][y] == '*'))
+    {
+        if(!checked[x - 1][y])
+        {
+            checked[x - 1][y] = true;
+            up_dead = dynamic_deadlock(x - 1, y, checked);
+            checked[x - 1][y] = false;
+        }else
+        {
+            up_dead = true;
+        }
+    }else if(elements[x - 1][y] == '#')
+    {
+        up_dead = true;
+    }
+
+    //Check if the box can leave through left
+    if((elements[x][y - 1] == '$') || (elements[x][y - 1] == '*'))
+    {
+        if(!checked[x][y - 1])
+        {
+            checked[x][y - 1] = true;
+            left_dead = dynamic_deadlock(x, y - 1, checked);
+            checked[x][y - 1] = false;
+        }else
+        {
+            left_dead = true;
+        }
+    }else if(elements[x][y - 1] == '#')
+    {
+        left_dead = true;
+    }
+
+    //Check if the box can leave through right
+    if((elements[x][y + 1] == '$') || (elements[x][y + 1] == '*'))
+    {
+        if(!checked[x][y + 1])
+        {
+            checked[x][y + 1] = true;
+            right_dead = dynamic_deadlock(x, y + 1, checked);
+            checked[x][y + 1] = false;
+        }else
+        {
+            right_dead = true;
+        }
+    }else if(elements[x][y + 1] == '#')
+    {
+        right_dead = true;
+    }
+
+    //After determining the escaping points, if the box is cornered, then it's
+    //in dynamic deadlock
+    if((down_dead && left_dead) ||
+       (down_dead && right_dead) ||
+       (up_dead && left_dead) ||
+       (up_dead && right_dead))
+        return true;
+
+    return false;
+}
+
+void board::update_distances()
+{
+    for(int i = 0; i < num_rows; ++ i)
+        for(int j = 0; j < num_cols; ++ j)
+        {
+            int d = INT_MAX;
+            for(vector<position>::iterator it = empty_goals.begin();
+                it != empty_goals.end();
+                ++ it)
+            {
+                int d_goal = abs((*it).x - i) + abs((*it).y - j);
+                if(d_goal < d)
+                    d = d_goal;
+            }
+            distance[i][j] = d;
+        }
     return;
 }

@@ -21,3 +21,5 @@ int main(int argc, char **argv);
 //path cannot be found
 string push_to_goals(board in);
 
+//Operator used to order elements in a priority queue
+bool operator<(const node_b &a, const node_b &b);

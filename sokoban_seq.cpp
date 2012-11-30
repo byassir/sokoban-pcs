@@ -29,14 +29,6 @@ int main(int argc, char **argv)
 
     board b(input);
 
-    b.print();
-    cout << "Deadlocks found" << endl;
-    for(int i = 0; i < b.num_rows; ++ i)
-        for(int j = 0; j < b.num_cols; ++ j)
-            if(b.s_deadlock[i][j])
-                position(i, j).print();
-
-    return 1;
     string sol = push_to_goals(b);
     run_simulation(b, sol);
     return 1;
@@ -48,15 +40,20 @@ void call_print(position p)
     p.print();
 }
 
+bool operator<(const node_b &a, const node_b &b)
+{
+    return (a.weight > b.weight);
+}
+
 string push_to_goals(board in)
 {
     set<board> visited;
-    queue<node_b> q;
+    priority_queue<node_b> q;
     q.push(node_b(in, ""));
 
     while(!q.empty())
     {
-        node_b par = q.front();
+        node_b par = q.top();
         q.pop();
         board par_b = par.current;
 
@@ -78,7 +75,7 @@ string push_to_goals(board in)
 
             //UP
             //Check that the box can be moved there
-            if(!par_b.s_deadlock[box.x - 1][box.y] &&
+            if(!par_b.is_deadlock(box.x - 1, box.y) &&
                (par_b.elements[box.x - 1][box.y] != '#') &&
                (par_b.elements[box.x - 1][box.y] != '*') &&
                (par_b.elements[box.x - 1][box.y] != '$') )
@@ -103,7 +100,7 @@ string push_to_goals(board in)
 
             //DOWN
             //Check that the box can be moved there
-            if(!par_b.s_deadlock[box.x + 1][box.y] &&
+            if(!par_b.is_deadlock(box.x + 1, box.y) &&
                (par_b.elements[box.x + 1][box.y] != '#') &&
                (par_b.elements[box.x + 1][box.y] != '*') &&
                (par_b.elements[box.x + 1][box.y] != '$') )
@@ -128,7 +125,7 @@ string push_to_goals(board in)
 
             //LEFT
             //Check that the box can be moved there
-            if(!par_b.s_deadlock[box.x][box.y - 1] &&
+            if(!par_b.is_deadlock(box.x, box.y - 1) &&
                (par_b.elements[box.x][box.y - 1] != '#') &&
                (par_b.elements[box.x][box.y - 1] != '*') &&
                (par_b.elements[box.x][box.y - 1] != '$') )
@@ -153,7 +150,7 @@ string push_to_goals(board in)
 
             //RIGHT
             //Check that the box can be moved there
-            if(!par_b.s_deadlock[box.x][box.y + 1] &&
+            if(!par_b.is_deadlock(box.x, box.y + 1) &&
                (par_b.elements[box.x][box.y + 1] != '#') &&
                (par_b.elements[box.x][box.y + 1] != '*') &&
                (par_b.elements[box.x][box.y + 1] != '$') )
