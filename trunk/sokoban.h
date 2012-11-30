@@ -1,5 +1,6 @@
 #include "node_b.h"
 #include "simulate.h"
+#include "board_hash.h"
 
 #include <fstream>
 #include <sstream>

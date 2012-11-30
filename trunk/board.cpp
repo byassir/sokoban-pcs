@@ -1,5 +1,17 @@
 #include "board.h"
 
+bool box_cmp(position a, position b)
+{
+    if(a.x < b.x)
+        return true;
+
+    if(a.x == b.x)
+        if(a.y < b.y)
+            return true;
+
+    return false;
+}
+
 board::board(const board &b)
 {
     num_rows = b.num_rows;
@@ -286,36 +298,9 @@ string board::find_path(position a, position b)
     return "E";
 }
 
-bool board::operator<(const board b) const
-{
-    if((num_rows != b.num_rows) ||
-        num_cols != b.num_cols)
-        return true;
-
-    for(int i = 0; i < num_rows; ++ i)
-        for(int j = 0; j < num_cols; ++ j)
-            if(elements[i][j] != b.elements[i][j])
-                return true;
-
-    return false;
-}
-
-/*board::~board()
-{
-    for(int i = 0; i < num_rows; ++ i)
-    {
-        cout << "Deleting row" << i << endl;
-        delete[] elements[i];
-        delete[] s_deadlock[i];
-    }
-
-    delete[] elements;
-    delete[] s_deadlock;
-}*/
-
 void board::find_deadlocks()
 {
-    //Allocate a new deadlock matrix
+    //Allocate a new static deadlock matrix
     s_deadlock = new bool*[num_rows];
     for(int i = 0; i < num_rows; ++ i)
     {
@@ -374,8 +359,7 @@ void board::find_deadlocks()
                             is_corr = true;
                             break;
                         }else if((elements[k][j] == '.') ||
-                                 (elements[k][j] == '+') ||
-                                 (elements[k][j] == '*'))
+                                 (elements[k][j] == '+'))
                         {
                             break;
                         }
@@ -421,8 +405,7 @@ void board::find_deadlocks()
                             is_corr = true;
                             break;
                         }else if((elements[i][k] == '.') ||
-                                 (elements[i][k] == '+') ||
-                                 (elements[i][k] == '*'))
+                                 (elements[i][k] == '+'))
                         {
                             break;
                         }
@@ -437,6 +420,11 @@ void board::find_deadlocks()
                         {
                             k += factor;
                             -- num_jumps;
+                            //Don't mark goals as deadlocks
+                            if((elements[i][k] == '.') ||
+                               (elements[i][k] == '*') ||
+                               (elements[i][k] == '+'))
+                                continue;
                             s_deadlock[i][k] = true;
                         }
                     }
@@ -460,7 +448,7 @@ bool board::is_deadlock(int x, int y)
         for(int j = 0; j < num_cols; ++ j)
             checked[i][j] = false;
     }
-    //memset(checked, 0, num_rows * num_cols * sizeof(bool));
+
     return dynamic_deadlock(x, y, checked);
 }
 
@@ -567,4 +555,85 @@ void board::update_distances()
             distance[i][j] = d;
         }
     return;
+}
+
+string board::get_key()
+{
+    position reach = find_area();
+    sort(boxes.begin(), boxes.end(), box_cmp);
+
+    stringstream key;
+    key << reach.x << "," << reach.y << ";";
+    for(vector<position>::iterator it = boxes.begin(); it != boxes.end(); ++ it)
+        key << (*it).x << "," << (*it).y << ";";
+
+    return key.str();
+}
+
+position board::find_area()
+{
+    position min = position(num_rows, num_cols);
+    queue<position> q;
+    bool visited[num_rows][num_cols];
+
+    for(int i = 0; i < num_rows; ++ i)
+        for(int j = 0; j < num_cols; ++ j)
+            visited[i][j] = false;
+
+    q.push(player);
+
+    while(!q.empty())
+    {
+        position par = q.front();
+        q.pop();
+
+        int x = par.x;
+        int y = par.y;
+
+        if(visited[x][y])
+            continue;
+
+        visited[x][y] = true;
+
+        if(box_cmp(par, min))
+        {
+            min.x = x;
+            min.y = y;
+        }
+
+        if((min.x == 1) && (min.y == 1))
+            break;
+
+        //Add the sons to the queue
+
+        //Top
+        if((elements[x - 1][y] == ' ') ||
+           (elements[x - 1][y] == '.') ||
+           (elements[x - 1][y] == '+')||
+           (elements[x - 1][y] == '@'))
+            q.push(position(x - 1, y));
+
+        //Bottom
+        if((elements[x + 1][y] == ' ') ||
+           (elements[x + 1][y] == '.') ||
+           (elements[x + 1][y] == '+')||
+           (elements[x + 1][y] == '@'))
+            q.push(position(x + 1, y));
+
+        //Left
+        if((elements[x][y - 1] == ' ') ||
+           (elements[x][y - 1] == '.') ||
+           (elements[x][y - 1] == '+')||
+           (elements[x][y - 1] == '@'))
+            q.push(position(x, y - 1));
+
+        //Right
+        if((elements[x][y + 1] == ' ') ||
+           (elements[x][y + 1] == '.') ||
+           (elements[x][y + 1] == '+')||
+           (elements[x][y + 1] == '@'))
+            q.push(position(x, y + 1));
+
+    }
+    return min;
 }
