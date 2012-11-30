@@ -5,6 +5,8 @@
 #include <iostream>
 #include <queue>
 #include <cstring>
+#include <cstdlib>
+#include <climits>
 
 using namespace std;
 
@@ -13,6 +15,7 @@ class board
     public:
         int num_rows;
         int num_cols;
+        int **distance;
         char **elements;
         position player;
         vector<position> boxes;
@@ -46,10 +49,17 @@ class board
         //Override of the < operator
         bool operator<(const board b) const;
 
-        //Destructor of the class
- //       ~board();
+        //Defines wether a position will lead to a dead configuration
+        bool is_deadlock(int x, int y);
 
     private:
-        //Finds all static deadlocks in the board and marks them as such
+        //Finds all positions that are deadlocked due to wall configuration
         void find_deadlocks();
+        
+        //Determines wether a position is in deadlock due to the box configuration
+        bool dynamic_deadlock(int x, int y, bool **checked);
+
+        //Updates the possible distance from each position to the nearest free
+        //goal
+        void update_distances();
 };
