@@ -1,10 +1,11 @@
 #include "sokoban.h"
+#include <thread>
 
 int main(int argc, char **argv)
 {
     if(argc < 2)
     {
-        cout << "Usage: ./sokoban_seq input_file" << endl;
+        cout << "Usage: OMP_NUM_THREADS=num_threads ./sokoban_seq input_file" << endl;
         return 0;
     }
 
@@ -37,36 +38,64 @@ int main(int argc, char **argv)
     return 1;
 }
 
-void call_print(position p)
-{
-    cout << "\t";
-    p.print();
-}
-
-bool operator<(const node_b &a, const node_b &b)
-{
-    return (a.weight > b.weight);
-}
+priority_queue<node_b> q;
+set<string> visited;
+string solution;
 
 string push_to_goals(board in)
 {
-    set<string> visited;
-    priority_queue<node_b> q;
-    q.push(node_b(in, ""));
+    node_b next_node(in, "");
+    q.push(next_node);
+    solution = "E";
 
-    while(!q.empty())
+    #pragma omp parallel
     {
-        node_b par = q.top();
-        q.pop();
+        #pragma omp single
+        {
+            while(solution.compare("E") == 0) 
+            {
+                //If no solution has been found, then spawn a new task
+                if(!q.empty())
+                {
+                    #pragma omp critical
+                    {
+                        next_node = q.top();
+                        q.pop();
+                    }
+
+                    #pragma omp task firstprivate(next_node)
+                        analyze(next_node);
+                }
+            }
+        }
+    }
+
+    return solution;
+}
+
+void analyze(node_b par)
+{
+    //Iterate while there is no solution found
+    while(solution.compare("E") == 0)
+    {
+        vector<node_b> to_push;
         board par_b = par.current;
 
         //Check if this is a final solution
         if(par_b.empty_goals.size() == 0)
-            return par.path;
+        {
+            #pragma omp critical
+                solution = par.path;
+            return;
+        }
 
         //Check if this element has already been visited
-        if(!visited.insert(par_b.get_key()).second)
-            continue;
+        bool leave = false;
+        #pragma omp critical
+            if(!visited.insert(par_b.get_key()).second)
+                leave = true;
+
+        if(leave) return;
 
         //For each box that is present on the board, try pushing it in every
         //valid direction
@@ -99,7 +128,7 @@ string push_to_goals(board in)
                         string new_path = par.path;
                         new_path += path_t;
                         new_path += "U";
-                        q.push(node_b(son_b, new_path));
+                        to_push.push_back(node_b(son_b, new_path));
                     }
                 }
             }
@@ -127,7 +156,8 @@ string push_to_goals(board in)
                         string new_path = par.path;
                         new_path += path_t;
                         new_path += "D";
-                        q.push(node_b(son_b, new_path));
+                        to_push.push_back(node_b(son_b, new_path));
+
                     }
                 }
             }
@@ -155,7 +185,7 @@ string push_to_goals(board in)
                         string new_path = par.path;
                         new_path += path_t;
                         new_path += "L";
-                        q.push(node_b(son_b, new_path));
+                        to_push.push_back(node_b(son_b, new_path));
                     }
                 }
             }
@@ -183,14 +213,26 @@ string push_to_goals(board in)
                         string new_path = par.path;
                         new_path += path_t;
                         new_path += "R";
-                        q.push(node_b(son_b, new_path));
+                        to_push.push_back(node_b(son_b, new_path));
                     }
                 }
             }
 
         }
+
+        #pragma omp critical
+            for(vector<node_b>::iterator it = to_push.begin(); 
+                it != to_push.end();
+                ++ it)
+                q.push(*it);
     }
 
-    //If here, then no valid solution was found
-    return "E";
+    return;
 }
+
+bool operator<(const node_b &a, const node_b &b)
+{
+    return (a.weight > b.weight);
+}
+
+

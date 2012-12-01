@@ -1,10 +1,29 @@
 #include "sokoban.h"
+#include <thread>
+
+//Global variables used for sharing
+int num_threads;
+
+//Here we will save the solution. This must be protected against writing
+mutex solution_mutex;
+condition_variable solution_cv;
+string solution;
+
+//This is the queue containing the work to be done. Access to it must be
+//restricted
+mutex q_mutex;
+priority_queue<node_b> q;
+
+//Set containing the elements that have been analyzed already. Access to it
+//must be restricted
+mutex visited_mutex;
+set<string> visited;
 
 int main(int argc, char **argv)
 {
-    if(argc < 2)
+    if(argc < 3)
     {
-        cout << "Usage: ./sokoban_seq input_file" << endl;
+        cout << "Usage: ./sokoban_seq input_file num_threads" << endl;
         return 0;
     }
 
@@ -29,6 +48,11 @@ int main(int argc, char **argv)
 
     board b(input);
 
+    //Read the number of threads
+    stringstream ss;
+    ss << argv[2];
+    ss >> num_threads;
+
 //    b.print();
 
     string sol = push_to_goals(b);
@@ -37,36 +61,68 @@ int main(int argc, char **argv)
     return 1;
 }
 
-void call_print(position p)
-{
-    cout << "\t";
-    p.print();
-}
-
-bool operator<(const node_b &a, const node_b &b)
-{
-    return (a.weight > b.weight);
-}
-
 string push_to_goals(board in)
 {
-    set<string> visited;
-    priority_queue<node_b> q;
+    //Add some work to do
     q.push(node_b(in, ""));
 
-    while(!q.empty())
+    //Acquire a unique lock over the solution in order to wait for the condition
+    //variable and initialize the solution
+    unique_lock<mutex> lock(solution_mutex);
+    solution = "E";
+
+    //Spawn all the workers
+    thread workers[num_threads];
+    for(int i = 0; i < num_threads; ++ i)
+        workers[i] = thread(analyze);
+
+    //Wait until a thread finds a solution
+    solution_cv.wait(lock);
+
+    //Join with the exiting threads
+    for(int i = 0; i < num_threads; ++ i)
+        workers[i].join();
+
+    return solution;
+}
+
+void analyze()
+{
+    //Iterate while there is no solution found
+    while(solution.compare("E") == 0)
     {
+        vector<node_b> to_push;
+        //For short critical section, si spin waiting.
+        do{}while(!q_mutex.try_lock());
+        //While there is nothing to consume, just loop
+        if(q.empty())
+        {
+            q_mutex.unlock();
+            continue;
+        }
         node_b par = q.top();
         q.pop();
+        q_mutex.unlock();
         board par_b = par.current;
 
         //Check if this is a final solution
         if(par_b.empty_goals.size() == 0)
-            return par.path;
+        {
+            solution_mutex.lock();
+            solution = par.path;
+            solution_mutex.unlock();
+            solution_cv.notify_one();
+            return;
+        }
 
         //Check if this element has already been visited
+        visited_mutex.lock();
         if(!visited.insert(par_b.get_key()).second)
+        {
+            visited_mutex.unlock();
             continue;
+        }
+        visited_mutex.unlock();
 
         //For each box that is present on the board, try pushing it in every
         //valid direction
@@ -99,7 +155,7 @@ string push_to_goals(board in)
                         string new_path = par.path;
                         new_path += path_t;
                         new_path += "U";
-                        q.push(node_b(son_b, new_path));
+                        to_push.push_back(node_b(son_b, new_path));
                     }
                 }
             }
@@ -127,7 +183,8 @@ string push_to_goals(board in)
                         string new_path = par.path;
                         new_path += path_t;
                         new_path += "D";
-                        q.push(node_b(son_b, new_path));
+                        to_push.push_back(node_b(son_b, new_path));
+
                     }
                 }
             }
@@ -155,7 +212,7 @@ string push_to_goals(board in)
                         string new_path = par.path;
                         new_path += path_t;
                         new_path += "L";
-                        q.push(node_b(son_b, new_path));
+                        to_push.push_back(node_b(son_b, new_path));
                     }
                 }
             }
@@ -183,14 +240,27 @@ string push_to_goals(board in)
                         string new_path = par.path;
                         new_path += path_t;
                         new_path += "R";
-                        q.push(node_b(son_b, new_path));
+                        to_push.push_back(node_b(son_b, new_path));
                     }
                 }
             }
 
         }
+
+        q_mutex.lock();
+        for(vector<node_b>::iterator it = to_push.begin(); 
+            it != to_push.end();
+            ++ it)
+            q.push(*it);
+        q_mutex.unlock();
     }
 
-    //If here, then no valid solution was found
-    return "E";
+    return;
 }
+
+bool operator<(const node_b &a, const node_b &b)
+{
+    return (a.weight > b.weight);
+}
+
+
