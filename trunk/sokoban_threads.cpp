@@ -19,6 +19,11 @@ priority_queue<node_b> q;
 mutex visited_mutex;
 set<string> visited;
 
+//Function particular to a thread implementation. This instructs each working
+//thread to take elements from the queue and push in sons until a solution is
+//found
+void analyze();
+
 int main(int argc, char **argv)
 {
     if(argc < 3)
@@ -46,6 +51,9 @@ int main(int argc, char **argv)
         input.push_back(in_line);
     }
 
+    timeval tv;
+    gettimeofday(&tv, NULL);
+    start = tv.tv_sec * 1000 + tv.tv_usec / 1000;
     board b(input);
 
     //Read the number of threads
@@ -56,7 +64,10 @@ int main(int argc, char **argv)
 //    b.print();
 
     string sol = push_to_goals(b);
-    cout << sol << endl;
+
+    gettimeofday(&tv, NULL);
+    cout << (tv.tv_sec * 1000 + tv.tv_usec / 1000) - start << endl;
+//    cout << sol << endl;
 //    run_simulation(b, sol);
     return 1;
 }
@@ -91,6 +102,14 @@ void analyze()
     //Iterate while there is no solution found
     while(solution.compare("E") == 0)
     {
+        //If execution has lasted more than a second, return
+        timeval part;
+        gettimeofday(&part, NULL);
+        if(part.tv_sec * 1000 - start >= 60000)
+        {
+            solution_cv.notify_one();
+            return;
+        }
         vector<node_b> to_push;
         //For short critical section, si spin waiting.
         do{}while(!q_mutex.try_lock());

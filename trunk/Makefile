@@ -1,3 +1,5 @@
+make: omp threads seq
+
 omp: simulate sokoban.h node_b.h
 	g++ -std=c++0x -fopenmp sokoban_omp.cpp simulate.o board.o position.o -o sokoban_omp
 
