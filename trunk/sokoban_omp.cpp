@@ -31,17 +31,14 @@ int main(int argc, char **argv)
         input.push_back(in_line);
     }
 
-    timeval tv;
-    gettimeofday(&tv, NULL);
-    start = tv.tv_sec * 1000 + tv.tv_usec / 1000;
+    start_t = time(NULL);
     board b(input);
 
 //    b.print();
 
     string sol = push_to_goals(b);
 
-    gettimeofday(&tv, NULL);
-    cout << (tv.tv_sec * 1000 + tv.tv_usec / 1000) - start << endl;
+    cout << time(NULL) - start_t << endl;
 //    cout << sol << endl;
 //    run_simulation(b, sol);
     return 1;
@@ -64,9 +61,7 @@ string push_to_goals(board in)
             while(solution.compare("E") == 0) 
             {
                 //If execution has lasted longer than a second, return
-                timeval part;
-                gettimeofday(&part, NULL);
-                if(part.tv_sec * 1000 - start >= 60000)
+                if(time(NULL) - start_t >= 60)
                     break;;
                 //If no solution has been found, then spawn a new task
                 if(!q.empty())

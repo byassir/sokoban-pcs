@@ -27,16 +27,13 @@ int main(int argc, char **argv)
         input.push_back(in_line);
     }
 
-    timeval tv;
-    gettimeofday(&tv, NULL);
-    start = tv.tv_sec * 1000 + tv.tv_usec / 1000;
+    start_t = time(NULL);
     board b(input);
 
 //    b.print();
 
     string sol = push_to_goals(b);
-    gettimeofday(&tv, NULL);
-    cout << ((tv.tv_sec * 1000 + tv.tv_usec / 1000) - (int)start) << endl;
+    cout << time(NULL) - start_t << endl;
 //    cout << sol << endl;
 //    run_simulation(b, sol);
     return 1;
@@ -62,10 +59,8 @@ string push_to_goals(board in)
     while(!q.empty())
     {
         //Stop if this has been running for more than a minute
-        timeval part;
-        gettimeofday(&part, NULL);
-        if((part.tv_sec * 1000 - (int)start) >= 60000)
-            return NULL;
+        if((time(NULL) - start_t) >= 60)
+            return "";
 
         node_b par = q.top();
         q.pop();
