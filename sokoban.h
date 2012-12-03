@@ -10,7 +10,7 @@
 
 using namespace std;
 
-int start;
+time_t start_t;
 
 //Calls the print method on the object given, adding a tab.
 void call_print(position p);

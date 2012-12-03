@@ -51,9 +51,7 @@ int main(int argc, char **argv)
         input.push_back(in_line);
     }
 
-    timeval tv;
-    gettimeofday(&tv, NULL);
-    start = tv.tv_sec * 1000 + tv.tv_usec / 1000;
+    start_t = time(NULL);
     board b(input);
 
     //Read the number of threads
@@ -65,8 +63,7 @@ int main(int argc, char **argv)
 
     string sol = push_to_goals(b);
 
-    gettimeofday(&tv, NULL);
-    cout << (tv.tv_sec * 1000 + tv.tv_usec / 1000) - start << endl;
+    cout << time(NULL) - start_t << endl;
 //    cout << sol << endl;
 //    run_simulation(b, sol);
     return 1;
@@ -103,9 +100,7 @@ void analyze()
     while(solution.compare("E") == 0)
     {
         //If execution has lasted more than a second, return
-        timeval part;
-        gettimeofday(&part, NULL);
-        if(part.tv_sec * 1000 - start >= 60000)
+        if(time(NULL) - start_t >= 60)
         {
             solution_cv.notify_one();
             return;
